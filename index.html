@@ -153,7 +153,14 @@
             document.getElementById('loading').style.display = 'block';
 
             try {
-                const response = await fetch('https://uq-reading-exam-page01.onrender.com/generate-exam');
+                const response = await fetch('http://127.0.0.1:5000/generate-exam', {
+                    method: 'POST',  // 必须是 POST
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // 如果还没做付费系统，传个空对象或假token都可以，主要是为了触发 POST
+                    body: JSON.stringify({ token: "guest" }) 
+                });
                 const data = await response.json();
                 
                 if(data.exam_set && data.exam_set.length > 0) {
