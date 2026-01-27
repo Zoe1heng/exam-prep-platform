@@ -42,7 +42,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
 # --- 3. 定义 Prompt  ---
-PROMPT_TEMPLATE = """
+STAGE1_PROMPT = """
 You are a strict exam content creator for the University of Queensland (UQ) Bridging English Program.
 Generate a JSON object with **8 distinct reading items**.
 
@@ -82,19 +82,59 @@ Return ONLY valid JSON.
 }
 """
 
+STAGE2_PROMPT = """
+You are an exam writer for UQ BEP Stage 2 Reading. 
+Generate a "Matching Headings" task based on a single cohesive academic article.
+
+### 1. ARTICLE STRUCTURE:
+- Topic: Academic (e.g., Architecture, Environmental Science, History, Linguistics).
+- Length: Total 600-700 words.
+- Structure: Split the article into **7 Sections** (labeled A, B, C, D, E, F, G).
+- Each section must have a distinct "Main Idea".
+
+### 2. HEADINGS GENERATION (The Puzzle):
+- Generate **9 Headings** (labeled i to ix).
+- **7 Headings** must be the correct titles for sections A-G.
+- **2 Headings** must be **Distractors** (plausible but incorrect, or minor details).
+- The headings should be short, distinct summaries (e.g., "The financial impact of...", "Early failures in design").
+
+### 3. OUTPUT FORMAT (Strict JSON):
+{
+  "title": "Article Title",
+  "headings": {
+    "i": "Heading text...",
+    "ii": "Heading text...",
+    ... (up to ix)
+  },
+  "sections": [
+    {
+      "id": "A",
+      "text": "Full text of section A...",
+      "correct_heading": "iii" // The roman numeral of the correct answer
+    },
+    ... (Repeat for B, C, D, E, F, G)
+  ]
+}
+"""
+
 # --- 4. 路由定义 (修正部分) ---
-# 注意：只保留 POST 方法，且放在最上面
 @app.route('/generate-exam', methods=['POST']) 
 @limiter.limit("2 per minute")  # 这里的限制规则可以根据需要调整
 @limiter.limit("50 per day")
 def generate_exam():
     try:
-        # 这里直接调用 AI 生成题目
-        # (如果你以后要做付费验证，可以在这里加 token 检查逻辑)
-        
+        data = request.get_json(silent=True)
+        # 获取用户想考哪个 Stage，默认为 'stage1'
+        stage_type = data.get('stage', 'stage1') 
+
+        # 根据请求切换 Prompt
+        current_prompt = STAGE1_PROMPT
+        if stage_type == 'stage2':
+            current_prompt = STAGE2_PROMPT
+
         response = client.chat.completions.create(
             model="gpt-4o-mini", 
-            messages=[{"role": "user", "content": PROMPT_TEMPLATE}],
+            messages=[{"role": "user", "content": current_prompt}],
             response_format={ "type": "json_object" },
             temperature=0.7 
         )
