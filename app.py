@@ -14,6 +14,8 @@ CORS(app)
 api_key = os.environ.get("OPENAI_API_KEY") 
 client = OpenAI(api_key=api_key)
 # 修改 Prompt，要求生成8道题的列表
+# app.py
+
 PROMPT_TEMPLATE = """
 You are an expert exam writer for the University of Queensland (UQ) Bridging English Program (BEP). 
 Generate a JSON object containing **8 distinct reading questions** simulating "Stage 1 Reading".
@@ -22,32 +24,30 @@ Generate a JSON object containing **8 distinct reading questions** simulating "S
 - **Length**: 110-140 words per paragraph.
 - **Style**: Academic but accessible (IELTS 6.0-6.5 level). 
 - **Structure**: almost all paragraphs should employ a **"Contrast" or "Misconception vs. Reality" structure**. 
-    - *Example structure*: "People often think X... However, recent research suggests Y..." OR "While X is popular, it has negative effects..."
-    - This is crucial because the questions ask about the "Main Point" or "Writer's Purpose".
-- **Topics**: Varied academic topics (Biology, Urban Planning, Psychology, Environmental Science, History of Tech). Do NOT use fictional topics.
+    - *Example*: "People often think X... However, recent research suggests Y..."
+- **Topics**: Varied academic topics (Biology, Urban Planning, Psychology, Tech, History).
 
 ### 2. Question Guidelines (Rotate strictly between these 3 types):
-Type A: **"What point is the writer making in the reading passage?"**
-- Correct answer: Summarizes the *argument* (usually found after the "However").
-- Distractors: True details mentioned in the text but NOT the main point.
+Type A: **"What point is the writer making...?"** (Main Idea)
+Type B: **"What is the writer doing...?"** (Function, e.g., "Correcting a misunderstanding", "Outlining a process")
+Type C: **"What would make a good heading...?"**
 
-Type B: **"What is the writer doing in this passage?"**
-- Options MUST start with -ing verbs (e.g., "Correcting a misunderstanding...", "Outlining a process...", "Doubting a theory...", "Introducing a new concept...").
+### 3. CRITICAL INSTRUCTION - RANDOMIZE ANSWERS:
+- **SHUFFLE THE OPTIONS**: The correct answer MUST NOT always be option A. 
+- **Random Distribution**: Across the 8 questions, ensure the correct index (0, 1, 2, 3) is varied. roughly 25% A, 25% B, 25% C, 25% D.
+- **Do NOT** output 0 for every question.
 
-Type C: **"What would make a good heading for this paragraph?"**
-- Options: Short, punchy titles or questions (e.g., "Why do birds sing?", "A new approach to waste").
-
-### 3. Output Format:
+### 4. Output Format:
 Return ONLY valid JSON.
 {
   "exam_set": [
     {
       "passage": "Text...",
-      "question": "One of the questions types above...",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct": 0 
+      "question": "Question text...",
+      "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+      "correct": 2  // INTEGER (0=A, 1=B, 2=C, 3=D). CHANGE THIS RANDOMLY!
     },
-    ... (repeat 8 times total)
+    ... (repeat 8 times)
   ]
 }
 """
